@@ -10,15 +10,15 @@ class Card {
         const cardElement = document.createElement("div");
         cardElement.classList.add("cell");
         cardElement.innerHTML = `
-          <div class="card" data-name="${this.name}">
-              <div class="card-inner">
-                  <div class="card-front"></div>
-                  <div class="card-back">
-                      <img src="${this.img}" alt="${this.name}">
-                  </div>
-              </div>
-          </div>
-      `;
+            <div class="card" data-name="${this.name}">
+                <div class="card-inner">
+                    <div class="card-front"></div>
+                    <div class="card-back">
+                        <img src="${this.img}" alt="${this.name}">
+                    </div>
+                </div>
+            </div>
+        `;
         return cardElement;
     }
 
@@ -30,6 +30,15 @@ class Card {
     #unflip() {
         const cardElement = this.element.querySelector(".card");
         cardElement.classList.remove("flipped");
+    }
+
+    toggleFlip() {
+        this.isFlipped = !this.isFlipped;
+        this.isFlipped ? this.#flip() : this.#unflip();
+    }
+
+    matches(otherCard) {
+        return this.name === otherCard.name;
     }
 }
 
@@ -69,6 +78,24 @@ class Board {
         });
     }
 
+    shuffleCards() {
+        this.cards.sort(() => Math.random() - 0.5);
+        this.render();
+    }
+
+    flipDownAllCards() {
+        this.cards.forEach(card => {
+            if (card.isFlipped) {
+                card.toggleFlip();
+            }
+        });
+    }
+
+    reset() {
+        this.shuffleCards();
+        this.flipDownAllCards();
+    }
+
     onCardClicked(card) {
         if (this.onCardClick) {
             this.onCardClick(card);
@@ -81,6 +108,9 @@ class MemoryGame {
         this.board = board;
         this.flippedCards = [];
         this.matchedCards = [];
+        this.moves = 0;
+        this.startTime = null;
+        this.timerInterval = null;
         if (flipDuration < 350 || isNaN(flipDuration) || flipDuration > 3000) {
             flipDuration = 350;
             alert(
@@ -90,6 +120,7 @@ class MemoryGame {
         this.flipDuration = flipDuration;
         this.board.onCardClick = this.#handleCardClick.bind(this);
         this.board.reset();
+        this.startTimer();
     }
 
     #handleCardClick(card) {
@@ -98,9 +129,52 @@ class MemoryGame {
             this.flippedCards.push(card);
 
             if (this.flippedCards.length === 2) {
+                this.moves++;
                 setTimeout(() => this.checkForMatch(), this.flipDuration);
             }
         }
+    }
+
+    checkForMatch() {
+        const [card1, card2] = this.flippedCards;
+        if (card1.matches(card2)) {
+            this.matchedCards.push(card1, card2);
+            if (this.matchedCards.length === this.board.cards.length) {
+                this.endGame();
+            }
+        } else {
+            card1.toggleFlip();
+            card2.toggleFlip();
+        }
+        this.flippedCards = [];
+    }
+
+    resetGame() {
+        this.board.reset();
+        this.flippedCards = [];
+        this.matchedCards = [];
+        this.moves = 0;
+        this.startTime = null;
+        this.stopTimer();
+        this.startTimer();
+    }
+
+    startTimer() {
+        this.startTime = Date.now();
+        this.timerInterval = setInterval(() => {
+            const elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+            document.getElementById("timer").textContent = `Tiempo: ${elapsedTime} s`;
+        }, 1000);
+    }
+
+    stopTimer() {
+        clearInterval(this.timerInterval);
+    }
+
+    endGame() {
+        this.stopTimer();
+        const elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+        alert(`¡Juego terminado! Movimientos: ${this.moves}, Tiempo: ${elapsedTime} s`);
     }
 }
 
@@ -124,4 +198,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("restart-button").addEventListener("click", () => {
         memoryGame.resetGame();
     });
+
+    document.getElementById("timer").textContent = "Tiempo: 0 s";
 });

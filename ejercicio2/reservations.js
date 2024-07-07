@@ -1,6 +1,37 @@
-class Customer {}
+class Customer {
+    constructor(id, name, email){
+        this.id = id;
+        this.name=name;
+        this.email=email;
+    }
+    get info(){
+        return `${this.name} (${this.email})`;
+    }
+}
 
-class Reservation {}
+class Reservation {
+    constructor(id, customer, date, guests){
+        this.id=id;
+        this.customer=customer;
+        this.date = date;
+        this.guests = guests;
+    }
+
+    get info(){
+        return `Reservacion por ${this.customer.info} el ${this.date} con ${this.guests} comensales`;
+    }
+
+    static validateReservation(reservationData){
+        const { date, guests } = reservationData;
+        const reservationDate = new Date(date);
+        const currentDate = new Date();
+
+        if (reservationDate < currentDate || guests <= 0){
+            return false;
+        }
+        return true;
+    }
+}
 
 class Restaurant {
     constructor(name) {

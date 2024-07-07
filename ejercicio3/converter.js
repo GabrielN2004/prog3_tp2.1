@@ -6,11 +6,58 @@ class Currency {
 }
 
 class CurrencyConverter {
-    constructor() {}
+    constructor(apiUrl) {
+        this.apiUrl = apiUrl || 'https://api.frankfurter.app';
+        this.currencies = [];
+    }
 
-    getCurrencies(apiUrl) {}
+    async getCurrencies() {
+        try {
+            const response = await fetch(`${this.apiUrl}/currencies`);
+            const data = await response.json();
+            this.currencies = Object.keys(data).map(code => new Currency(code, data[code]));
+        } catch (error) {
+            console.error('Error fetching currencies:', error);
+        }
+    }
 
-    convertCurrency(amount, fromCurrency, toCurrency) {}
+    async convertCurrency(amount, fromCurrency, toCurrency) {
+        try {
+            if (fromCurrency.code === toCurrency.code) {
+                return parseFloat(amount);
+            }
+
+            const response = await fetch(`${this.apiUrl}/latest?amount=${amount}&from=${fromCurrency.code}&to=${toCurrency.code}`);
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            return parseFloat(data.rates[toCurrency.code]) * parseFloat(amount);
+        } catch (error) {
+            console.error('Error converting currency:', error);
+            return null;
+        }
+    }
+
+    async getExchangeRateDifference(date1, date2, baseCurrency, targetCurrency) {
+        try {
+            const response1 = await fetch(`${this.apiUrl}/${date1}?from=${baseCurrency}&to=${targetCurrency}`);
+            const response2 = await fetch(`${this.apiUrl}/${date2}?from=${baseCurrency}&to=${targetCurrency}`);
+
+            const data1 = await response1.json();
+            const data2 = await response2.json();
+
+            const rate1 = parseFloat(data1.rates[targetCurrency]);
+            const rate2 = parseFloat(data2.rates[targetCurrency]);
+
+            return rate1 - rate2;
+        } catch (error) {
+            console.error('Error fetching exchange rate difference:', error);
+            return null;
+        }
+    }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
